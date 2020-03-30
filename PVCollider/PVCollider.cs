@@ -228,6 +228,9 @@ namespace PVCollider
             if (__instance.transLookAtNull == null)
                 return;
 
+            if (___assetName.Length == 0)
+                return;
+
 
             lookAtFemale = __instance.transLookAtNull.transform.GetComponentInParent<AIChara.ChaControl>();
             if (lookAtFemale == null)
@@ -237,7 +240,8 @@ namespace PVCollider
             else
             {
                 newLookAtTarget = lookAtFemale.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cervix")).FirstOrDefault();
-                Console.WriteLine("newLookAtTarget is " + newLookAtTarget.name);
+                if(newLookAtTarget != null)
+                    Console.WriteLine("newLookAtTarget is " + newLookAtTarget.name);
             }
             if (newLookAtTarget == null)
             {
@@ -417,22 +421,31 @@ namespace PVCollider
         public static void HScene_EndProc_Patch()
         {
             inHScene = false;
-            foreach (DynamicBone vagBone in vagBones)
-            {
-                Console.WriteLine("Clearing colliders from " + vagBone.m_Root.name);
-                vagBone.m_Colliders.Clear();
+            if(!inHScene)
+            { 
+                if(vagBones.Any())
+                { 
+                    foreach (DynamicBone vagBone in vagBones)
+                    {
+                        if (vagBone != null)
+                        { 
+                            Console.WriteLine("Clearing colliders from " + vagBone.m_Root.name);
+                            vagBone.m_Colliders.Clear();
+                        }
+                    }
+                    Console.WriteLine("Destroying collider " + dbc.name);
+                    Destroy(dbc);
+                    Console.WriteLine("Destroying collider " + dbcshaft.name);
+                    Destroy(dbcshaft);
+                    Console.WriteLine("Clearing females list");
+                    Array.Clear(fem_list,0,fem_list.Length);
+                    Console.WriteLine("Clearing males list");
+                    Array.Clear(male_list, 0, male_list.Length);
+                    Console.WriteLine("Clearing excluded poses list");
+                    excludedPoses.Clear();
+                    poseName = "";
+                }
             }
-            Console.WriteLine("Destroying collider " + dbc.name);
-            Destroy(dbc);
-            Console.WriteLine("Destroying collider " + dbcshaft.name);
-            Destroy(dbcshaft);
-            Console.WriteLine("Clearing females list");
-            Array.Clear(fem_list,0,fem_list.Length);
-            Console.WriteLine("Clearing males list");
-            Array.Clear(male_list, 0, male_list.Length);
-            Console.WriteLine("Clearing excluded poses list");
-            excludedPoses.Clear();
-            poseName = "";
         }
 
         private void OnGUI()
