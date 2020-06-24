@@ -396,7 +396,7 @@ namespace PVCollider
             foreach(var female in fem_list.Where(female => female != null))
             {
                  Console.WriteLine("Checking for additional vagina dynamic bones");
-                 foreach (DynamicBone db in female.GetComponentsInChildren<DynamicBone>().Where(x => x.m_Root.name.Contains("cf_J_Vagina")))
+                 foreach (DynamicBone db in female.GetComponentsInChildren<DynamicBone>().Where(x => x.name.Contains("cf_J_Vagina")))
                  {
                       if (db != null)
                       {
@@ -408,21 +408,21 @@ namespace PVCollider
                         vagBones.Add(db);
                         if (db.m_Colliders.Contains(dbcshaft))
                         {
-                            Console.WriteLine("Instance of " + dbcshaft.name + " already exists in list for DB " + db.m_Root.name);                            
+                            Console.WriteLine("Instance of " + dbcshaft.name + " already exists in list for DB " + db.name);                            
                         }
                         else
                         { 
                             db.m_Colliders.Add(dbcshaft);
-                            Console.WriteLine(dbcshaft.name + " added to " + female.name + " for bone " + db.m_Root.name);
+                            Console.WriteLine(dbcshaft.name + " added to " + female.name + " for bone " + db.name);
                         }
                         if (db.m_Colliders.Contains(dbc))
                         {
-                            Console.WriteLine("Instance of " + dbc.name + " already exists in list for DB " + db.m_Root.name);                                
+                            Console.WriteLine("Instance of " + dbc.name + " already exists in list for DB " + db.name);                                
                         }
                         else
                         { 
                             db.m_Colliders.Add(dbc);
-                            Console.WriteLine(dbc.name + " added to " + female.name + " for bone " + db.m_Root.name);
+                            Console.WriteLine(dbc.name + " added to " + female.name + " for bone " + db.name);
                         }
                              //}
                          //}
