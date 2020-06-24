@@ -52,6 +52,10 @@ namespace PVCollider
         public static Transform newLookAtTarget;
         public static AIChara.ChaControl lookAtFemale;
         private static Vector3 PenisOffset;
+        public static Transform lookatTarget;
+        public static Transform dan101;
+        public static Transform danUp;
+        private static bool bRotateDan;
  
 
         private void Awake()
@@ -219,8 +223,11 @@ namespace PVCollider
             HarmonyWrapper.PatchAll(typeof(PVCollider), harmony);
         }
 
-
-    
+        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
+        private static void HScene_ChangeAnimation()
+        {
+            bRotateDan = false;
+        }
 
         [HarmonyPostfix, HarmonyPatch(typeof(H_Lookat_dan), "setInfo")]
         private static void LateReplaceKokan(H_Lookat_dan __instance, System.Text.StringBuilder ___assetName)
@@ -230,7 +237,6 @@ namespace PVCollider
 
             if (___assetName.Length == 0)
                 return;
-
 
             lookAtFemale = __instance.transLookAtNull.transform.GetComponentInParent<AIChara.ChaControl>();
             if (lookAtFemale == null)
@@ -262,8 +268,12 @@ namespace PVCollider
             }
 
             poseName = ___assetName.ToString();
-            Transform lookatTarget = __instance.transLookAtNull;
+            lookatTarget = __instance.transLookAtNull;
             Console.WriteLine(lookatTarget.name);
+            bRotateDan = false;
+            if (dan101 != null && danUp != null && lookatTarget != null)
+                bRotateDan = true;
+
             if (excludedPoses.Contains(poseName))
             {
                 Console.WriteLine("Pose " + poseName + " found in exclusion list, aborting");
@@ -278,9 +288,12 @@ namespace PVCollider
 
                         if (newLookAtTarget != null)
                         {
+                            lookatTarget = newLookAtTarget;
                             __instance.transLookAtNull = newLookAtTarget;
                             __instance.dan_Info.SetTargetTransform(newLookAtTarget);
                             Console.WriteLine("New target is " + __instance.transLookAtNull.name);
+                            if (bRotateDan)
+                                dan101.rotation = Quaternion.LookRotation(lookatTarget.position - dan101.position, Vector3.Normalize(danUp.position - dan101.position));
                         }
                         else
                         {
@@ -292,7 +305,6 @@ namespace PVCollider
                 {
                     PenisOffset = new Vector3(lookatTarget.position.x + _lookAtTargetOffset_x.Value, lookatTarget.position.y + _lookAtTargetOffset_y.Value, lookatTarget.position.z + _lookAtTargetOffset_z.Value);
                 }
-
             }
         }
 
@@ -307,12 +319,16 @@ namespace PVCollider
                 __instance.transLookAtNull.position = PenisOffset;
                 }
             }
+
+            if (bRotateDan)
+                dan101.rotation = Quaternion.LookRotation(lookatTarget.position - dan101.position, Vector3.Normalize(danUp.position - dan101.position));
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetStartVoice")]
         public static void AddPColliders(HScene __instance)
         {
             inHScene = true;
+            bRotateDan = false;
 
             male_list = __instance.GetMales().Where(male => male != null).ToArray();
             fem_list = __instance.GetFemales().Where(female => female != null).ToArray();
@@ -322,6 +338,8 @@ namespace PVCollider
             
             foreach (var male in male_list.Where(male => male != null))
             {
+                danUp = male.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("k_f_kosi03_03")).FirstOrDefault();
+                dan101 = male.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cm_J_dan101_00")).FirstOrDefault();
                 foreach (var penisshaft in male.GetComponentsInChildren<Transform>().Where(shaft=>shaft.name.Contains("cm_J_dan101_00")))
                 {
                      dbcshaft = penisshaft.GetComponent<DynamicBoneCollider>();                    
