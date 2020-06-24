@@ -7,8 +7,6 @@ using BepInEx.Harmony;
 using HarmonyLib;
 using BepInEx.Configuration;
 
-
-
 namespace PVCollider
 {
 
@@ -54,9 +52,11 @@ namespace PVCollider
         private static Vector3 PenisOffset;
         public static Transform lookatTarget;
         public static Transform dan101;
+        public static Transform dan109;
         public static Transform danUp;
         private static bool bRotateDan;
- 
+        private static bool bDansFound;
+
 
         private void Awake()
         {
@@ -223,8 +223,8 @@ namespace PVCollider
             HarmonyWrapper.PatchAll(typeof(PVCollider), harmony);
         }
 
-        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
-        private static void HScene_ChangeAnimation()
+        [HarmonyPrefix, HarmonyPatch(typeof(H_Lookat_dan), "setInfo")]
+        private static void EarlyReplaceKokan()
         {
             bRotateDan = false;
         }
@@ -233,7 +233,11 @@ namespace PVCollider
         private static void LateReplaceKokan(H_Lookat_dan __instance, System.Text.StringBuilder ___assetName)
         {
             if (__instance.transLookAtNull == null)
+            {
+                if (bDansFound)
+                    dan101.rotation = Quaternion.LookRotation(dan109.position - dan101.position, Vector3.Normalize(danUp.position - dan101.position));
                 return;
+            }
 
             if (___assetName.Length == 0)
                 return;
@@ -246,8 +250,8 @@ namespace PVCollider
             else
             {
                 newLookAtTarget = lookAtFemale.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cervix")).FirstOrDefault();
-                if(newLookAtTarget != null)
-                    Console.WriteLine("newLookAtTarget is " + newLookAtTarget.name);
+                if (newLookAtTarget != null)
+                   Console.WriteLine("newLookAtTarget is " + newLookAtTarget.name);
             }
             if (newLookAtTarget == null)
             {
@@ -270,43 +274,47 @@ namespace PVCollider
             poseName = ___assetName.ToString();
             lookatTarget = __instance.transLookAtNull;
             Console.WriteLine(lookatTarget.name);
-            bRotateDan = false;
-            if (dan101 != null && danUp != null && lookatTarget != null)
-                bRotateDan = true;
+            if (__instance.strPlayMotion.Contains("Idle") == false && __instance.strPlayMotion.Contains("OUT") == false)
+            {
+                if (bDansFound && lookatTarget != null)
+                    bRotateDan = true;
 
-            if (excludedPoses.Contains(poseName))
-            {
-                Console.WriteLine("Pose " + poseName + " found in exclusion list, aborting");
-            }
-            else
-            {
-                if (lookatTarget.name.Contains("k_f_kokan_00"))
+                if (excludedPoses.Contains(poseName))
                 {
-                    Console.WriteLine("Target set to " + lookatTarget.name + ". Changing...");
-                    if (lookAtFemale != null)
+                    Console.WriteLine("Pose " + poseName + " found in exclusion list, aborting");
+                }
+                else
+                {
+                    if (lookatTarget.name.Contains("k_f_kokan_00"))
                     {
+                        Console.WriteLine("Target set to " + lookatTarget.name + ". Changing...");
+                        if (lookAtFemale != null)
+                        {
 
-                        if (newLookAtTarget != null)
-                        {
-                            lookatTarget = newLookAtTarget;
-                            __instance.transLookAtNull = newLookAtTarget;
-                            __instance.dan_Info.SetTargetTransform(newLookAtTarget);
-                            Console.WriteLine("New target is " + __instance.transLookAtNull.name);
-                        }
-                        else
-                        {
-                            Console.WriteLine("Could not find any additional vagina target, leaving as is");
+                            if (newLookAtTarget != null)
+                            {
+                                lookatTarget = newLookAtTarget;
+                                __instance.transLookAtNull = newLookAtTarget;
+                                __instance.dan_Info.SetTargetTransform(newLookAtTarget);
+                                Console.WriteLine("New target is " + __instance.transLookAtNull.name);
+                            }
+                            else
+                            {
+                                Console.WriteLine("Could not find any additional vagina target, leaving as is");
+                            }
                         }
                     }
-                }
-                if (lookatTarget != null)
-                {
-                    PenisOffset = new Vector3(lookatTarget.position.x + _lookAtTargetOffset_x.Value, lookatTarget.position.y + _lookAtTargetOffset_y.Value, lookatTarget.position.z + _lookAtTargetOffset_z.Value);
+                    if (lookatTarget != null)
+                    {
+                        PenisOffset = new Vector3(lookatTarget.position.x + _lookAtTargetOffset_x.Value, lookatTarget.position.y + _lookAtTargetOffset_y.Value, lookatTarget.position.z + _lookAtTargetOffset_z.Value);
+                    }
                 }
             }
 
             if (bRotateDan)
                 dan101.rotation = Quaternion.LookRotation(lookatTarget.position - dan101.position, Vector3.Normalize(danUp.position - dan101.position));
+            else if (bDansFound)
+                dan101.rotation = Quaternion.LookRotation(dan109.position - dan101.position, Vector3.Normalize(danUp.position - dan101.position));
         }
 
 
@@ -323,13 +331,16 @@ namespace PVCollider
 
             if (bRotateDan)
                 dan101.rotation = Quaternion.LookRotation(lookatTarget.position - dan101.position, Vector3.Normalize(danUp.position - dan101.position));
-        }
+            else if(bDansFound)
+                dan101.rotation = Quaternion.LookRotation(dan109.position - dan101.position, Vector3.Normalize(danUp.position - dan101.position));
+       }
 
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetStartVoice")]
         public static void AddPColliders(HScene __instance)
         {
             inHScene = true;
             bRotateDan = false;
+            bDansFound = false;
 
             male_list = __instance.GetMales().Where(male => male != null).ToArray();
             fem_list = __instance.GetFemales().Where(female => female != null).ToArray();
@@ -341,6 +352,10 @@ namespace PVCollider
             {
                 danUp = male.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("k_f_kosi03_03")).FirstOrDefault();
                 dan101 = male.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cm_J_dan101_00")).FirstOrDefault();
+                dan109 = male.GetComponentsInChildren<Transform>().Where(x => x.name.Contains("cm_J_dan109_00")).FirstOrDefault();
+
+                if (dan101 != null && danUp != null && dan109 != null)
+                    bDansFound = true;
                 foreach (var penisshaft in male.GetComponentsInChildren<Transform>().Where(shaft=>shaft.name.Contains("cm_J_dan101_00")))
                 {
                      dbcshaft = penisshaft.GetComponent<DynamicBoneCollider>();                    
