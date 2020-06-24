@@ -292,8 +292,6 @@ namespace PVCollider
                             __instance.transLookAtNull = newLookAtTarget;
                             __instance.dan_Info.SetTargetTransform(newLookAtTarget);
                             Console.WriteLine("New target is " + __instance.transLookAtNull.name);
-                            if (bRotateDan)
-                                dan101.rotation = Quaternion.LookRotation(lookatTarget.position - dan101.position, Vector3.Normalize(danUp.position - dan101.position));
                         }
                         else
                         {
@@ -306,6 +304,9 @@ namespace PVCollider
                     PenisOffset = new Vector3(lookatTarget.position.x + _lookAtTargetOffset_x.Value, lookatTarget.position.y + _lookAtTargetOffset_y.Value, lookatTarget.position.z + _lookAtTargetOffset_z.Value);
                 }
             }
+
+            if (bRotateDan)
+                dan101.rotation = Quaternion.LookRotation(lookatTarget.position - dan101.position, Vector3.Normalize(danUp.position - dan101.position));
         }
 
 
